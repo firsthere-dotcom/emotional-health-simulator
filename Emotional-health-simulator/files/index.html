@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Impact Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f4f3ee;
+    --color-background-tertiary: #faf9f5;
+    --color-text-primary: #1a1a17;
+    --color-text-secondary: #6e6d66;
+    --color-text-tertiary: #9b998f;
+    --color-border-tertiary: rgba(0, 0, 0, 0.10);
+    --color-border-secondary: rgba(0, 0, 0, 0.18);
+    --color-border-info: #378add;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+    --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #262624;
+      --color-background-secondary: #302f2c;
+      --color-background-tertiary: #1f1e1c;
+      --color-text-primary: #f4f3ee;
+      --color-text-secondary: #c0bdb3;
+      --color-text-tertiary: #8f8d84;
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+      --color-border-secondary: rgba(255, 255, 255, 0.20);
+      --color-border-info: #5aa0e6;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-tertiary);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 2.5rem 1rem;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  header.page { margin-bottom: 2rem; }
+  header.page h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 32px;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  header.page p {
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    margin-top: 8px;
+    max-width: 58ch;
+  }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+  .section-title {
+    font-size: 13px; font-weight: 500; color: var(--color-text-secondary);
+    text-transform: uppercase; letter-spacing: 0.05em; margin: 1.75rem 0 0.75rem;
+  }
+
+  /* Scenario tabs */
+  .scenario-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab {
+    font-family: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary);
+    background: transparent; color: var(--color-text-secondary); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { background: var(--color-background-secondary); }
+  .tab.active { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+
+  /* Emotional wellbeing summary cards */
+  .ew-row { display: flex; gap: 10px; margin-bottom: 0.5rem; }
+  .ew-card { flex: 1; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; }
+  .ew-card-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .ew-card-score { font-size: 24px; font-weight: 500; color: var(--color-text-primary); line-height: 1; }
+  .ew-card-bar { height: 4px; border-radius: 2px; background: var(--color-background-primary); margin-top: 8px; }
+  .ew-card-fill { height: 4px; border-radius: 2px; background: #1D9E75; transition: width 0.4s ease; }
+  .ew-card.active-scenario { outline: 2px solid var(--color-border-info); }
+  .calib-note { font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; }
+
+  /* Grouped bar chart */
+  .chart-wrap { display: flex; align-items: flex-end; gap: 6px; height: 200px; margin-bottom: 0.25rem; }
+  .bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; gap: 3px; }
+  .bars-row { display: flex; align-items: flex-end; gap: 2px; width: 100%; justify-content: center; }
+  .bar-block { flex: 1; border-radius: 2px 2px 0 0; transition: height 0.4s ease; min-height: 2px; max-width: 18px; }
+  .bar-label { font-size: 9px; color: var(--color-text-secondary); text-align: center; line-height: 1.2; margin-top: 4px; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-text-secondary); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .divider { height: 0.5px; background: var(--color-border-tertiary); margin: 1.75rem 0; }
+
+  /* Action cards */
+  .actions-grid { display: flex; flex-direction: column; gap: 10px; }
+  .action-card {
+    background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg); padding: 12px 14px;
+  }
+  .action-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .action-name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .action-type { font-size: 11px; color: var(--color-text-tertiary); background: var(--color-background-secondary); padding: 2px 8px; border-radius: 10px; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; gap: 10px; }
+  .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: var(--color-border-secondary); border-radius: 10px; transition: background 0.2s; cursor: pointer; }
+  .toggle input:checked + .toggle-slider { background: #1D9E75; }
+  .toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(16px); }
+  .toggle-desc { font-size: 13px; color: var(--color-text-secondary); }
+
+  /* Sliders */
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; flex: 1; height: 4px;
+    background: var(--color-border-secondary); border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--color-text-primary); border: 2px solid var(--color-background-primary); cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--color-text-primary); border: 2px solid var(--color-background-primary); cursor: pointer;
+  }
+  .slider-val { font-size: 13px; font-weight: 500; color: var(--color-text-primary); min-width: 64px; text-align: right; }
+
+  .effects-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .effect-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+  .effect-pos { background: #E1F5EE; color: #085041; }
+  .effect-neg { background: #FCEBEB; color: #791F1F; }
+  @media (prefers-color-scheme: dark) {
+    .effect-pos { background: rgba(29, 158, 117, 0.18); color: #6fd3ad; }
+    .effect-neg { background: rgba(226, 75, 74, 0.18); color: #f0908f; }
+  }
+
+  button.action-btn {
+    font-family: inherit; font-size: 13px; margin-top: 12px;
+    background: transparent; color: var(--color-text-primary);
+    border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md);
+    padding: 6px 12px; cursor: pointer; transition: all 0.15s;
+  }
+  button.action-btn:hover { background: var(--color-background-secondary); }
+  button.action-btn:active { transform: scale(0.98); }
+
+  footer.page { margin-top: 2rem; font-size: 12px; color: var(--color-text-tertiary); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="page">
+      <h1>Life Impact Simulator</h1>
+      <p>See how your weekly choices ripple across the parts of life that matter to you, and how the move abroad compares: now, during the transition, and once you're settled.</p>
+    </header>
+
+    <div class="scenario-tabs" id="scenario-tabs">
+      <button class="tab active" data-scenario="current">Current</button>
+      <button class="tab" data-scenario="during">During move</button>
+      <button class="tab" data-scenario="after">After move</button>
+    </div>
+
+    <div class="ew-row">
+      <div class="ew-card active-scenario" id="ew-card-current">
+        <div class="ew-card-label">Current</div>
+        <div class="ew-card-score" id="ew-current">—</div>
+        <div class="ew-card-bar"><div class="ew-card-fill" id="ew-bar-current" style="width:0%"></div></div>
+      </div>
+      <div class="ew-card" id="ew-card-during">
+        <div class="ew-card-label">During move</div>
+        <div class="ew-card-score" id="ew-during">—</div>
+        <div class="ew-card-bar"><div class="ew-card-fill" id="ew-bar-during" style="width:0%"></div></div>
+      </div>
+      <div class="ew-card" id="ew-card-after">
+        <div class="ew-card-label">After move</div>
+        <div class="ew-card-score" id="ew-after">—</div>
+        <div class="ew-card-bar"><div class="ew-card-fill" id="ew-bar-after" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="calib-note">Anchored so your original current settings read 50%. Edit any scenario freely; all three move on the same fixed scale. Changes save automatically in this browser.</div>
+
+    <div class="section-title">Dimension comparison</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#888780"></div>Current</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div>During move</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>After move</div>
+    </div>
+    <div class="chart-wrap" id="chart-wrap"></div>
+
+    <div class="divider"></div>
+
+    <div class="section-title" id="actions-title">Editing: Current</div>
+    <div class="actions-grid" id="actions-grid"></div>
+    <button class="action-btn" id="reset-btn">Reset this scenario to defaults</button>
+
+    <footer class="page">A personal decision-modelling tool. The numbers are only as good as the weights and effects behind them — treat it as a thinking aid, not an oracle.</footer>
+  </div>
+
+  <script src="model.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      var M = window.LIModel;
+      var STORAGE_KEY = 'life_impact_simulator_v1';
+      var SCENARIO_COLORS = { current: '#888780', during: '#EF9F27', after: '#1D9E75' };
+      var SCENARIO_LABELS = { current: 'Current', during: 'During move', after: 'After move' };
+      var ALL_DIMS = Object.keys(M.WEIGHTS).concat(['stress']);
+
+      function freshDefaults() {
+        return {
+          current: Object.assign({}, M.SCENARIO_DEFAULTS.current),
+          during: Object.assign({}, M.SCENARIO_DEFAULTS.during),
+          after: Object.assign({}, M.SCENARIO_DEFAULTS.after)
+        };
+      }
+
+      function loadScenarios() {
+        try {
+          var saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (saved && saved.current && saved.during && saved.after) return saved;
+        } catch (e) { /* ignore corrupt storage */ }
+        return freshDefaults();
+      }
+
+      function saveScenarios() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(scenarios)); } catch (e) { /* ignore */ }
+      }
+
+      var scenarios = loadScenarios();
+      var activeScenario = 'current';
+
+      function buildChart() {
+        var wrap = document.getElementById('chart-wrap');
+        wrap.innerHTML = '';
+        ALL_DIMS.forEach(function (d) {
+          var group = document.createElement('div');
+          group.className = 'bar-group';
+          var barsRow = document.createElement('div');
+          barsRow.className = 'bars-row';
+          ['current', 'during', 'after'].forEach(function (s) {
+            var bar = document.createElement('div');
+            bar.className = 'bar-block';
+            bar.id = 'bar-' + s + '-' + d;
+            bar.style.background = SCENARIO_COLORS[s];
+            bar.style.height = '0px';
+            barsRow.appendChild(bar);
+          });
+          var label = document.createElement('div');
+          label.className = 'bar-label';
+          label.textContent = M.DIM_SHORT[d];
+          group.appendChild(barsRow);
+          group.appendChild(label);
+          wrap.appendChild(group);
+        });
+      }
+
+      function renderChart() {
+        var all = {
+          current: M.computeScores(scenarios.current),
+          during: M.computeScores(scenarios.during),
+          after: M.computeScores(scenarios.after)
+        };
+        var MAX_H = 160;
+        ALL_DIMS.forEach(function (d) {
+          ['current', 'during', 'after'].forEach(function (s) {
+            var val = d === 'stress' ? all[s].stressScore : (all[s].scores[d] || 0);
+            var bar = document.getElementById('bar-' + s + '-' + d);
+            if (bar) bar.style.height = Math.round(val * MAX_H) + 'px';
+          });
+        });
+        ['current', 'during', 'after'].forEach(function (s) {
+          var pct = Math.round(all[s].ew * 100);
+          document.getElementById('ew-' + s).textContent = pct + '%';
+          document.getElementById('ew-bar-' + s).style.width = pct + '%';
+        });
+      }
+
+      function buildActions() {
+        var grid = document.getElementById('actions-grid');
+        grid.innerHTML = '';
+        var state = scenarios[activeScenario];
+        M.ACTIONS.forEach(function (a) {
+          var card = document.createElement('div');
+          card.className = 'action-card';
+
+          var dimTags = a.effects.filter(function (e) { return e.dim !== 'stress'; }).map(function (e) {
+            return '<span class="effect-tag ' + (e.dir > 0 ? 'effect-pos' : 'effect-neg') + '">' +
+              (e.dir > 0 ? '+' : '-') + ' ' + M.DIM_SHORT[e.dim] + '</span>';
+          }).join('');
+          var stressTag = a.stressEffect
+            ? '<span class="effect-tag effect-neg">- Stress (above ' + a.stressEffect.threshold + 'hrs)</span>'
+            : (a.effects.some(function (e) { return e.dim === 'stress'; }) ? '<span class="effect-tag effect-neg">- Stress</span>' : '');
+
+          if (a.type === 'binary') {
+            card.innerHTML =
+              '<div class="action-header"><span class="action-name">' + a.name + '</span><span class="action-type">Decision</span></div>' +
+              '<div class="toggle-row">' +
+                '<label class="toggle"><input type="checkbox" id="input-' + a.id + '" ' + (state[a.id] ? 'checked' : '') + '><span class="toggle-slider"></span></label>' +
+                '<span class="toggle-desc" id="desc-' + a.id + '">' + (state[a.id] ? 'Active' : 'Not active') + '</span>' +
+              '</div>' +
+              '<div class="effects-row">' + dimTags + stressTag + '</div>';
+            grid.appendChild(card);
+            card.querySelector('#input-' + a.id).addEventListener('change', function () {
+              scenarios[activeScenario][a.id] = this.checked;
+              document.getElementById('desc-' + a.id).textContent = this.checked ? 'Active' : 'Not active';
+              saveScenarios();
+              renderChart();
+            });
+          } else {
+            card.innerHTML =
+              '<div class="action-header"><span class="action-name">' + a.name + '</span><span class="action-type">Weekly habit</span></div>' +
+              '<div class="slider-row">' +
+                '<input type="range" min="0" max="' + a.max + '" step="1" value="' + state[a.id] + '" id="input-' + a.id + '">' +
+                '<span class="slider-val" id="val-' + a.id + '">' + state[a.id] + ' ' + a.unit + '</span>' +
+              '</div>' +
+              '<div class="effects-row">' + dimTags + stressTag + '</div>';
+            grid.appendChild(card);
+            card.querySelector('#input-' + a.id).addEventListener('input', function () {
+              scenarios[activeScenario][a.id] = parseInt(this.value, 10);
+              document.getElementById('val-' + a.id).textContent = this.value + ' ' + a.unit;
+              saveScenarios();
+              renderChart();
+            });
+          }
+        });
+      }
+
+      function switchScenario(name) {
+        activeScenario = name;
+        var tabs = document.querySelectorAll('.tab');
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].classList.toggle('active', tabs[i].getAttribute('data-scenario') === name);
+        }
+        ['current', 'during', 'after'].forEach(function (s) {
+          document.getElementById('ew-card-' + s).classList.toggle('active-scenario', s === name);
+        });
+        document.getElementById('actions-title').textContent = 'Editing: ' + SCENARIO_LABELS[name];
+        buildActions();
+      }
+
+      document.getElementById('scenario-tabs').addEventListener('click', function (ev) {
+        var btn = ev.target.closest('.tab');
+        if (btn) switchScenario(btn.getAttribute('data-scenario'));
+      });
+
+      document.getElementById('reset-btn').addEventListener('click', function () {
+        scenarios[activeScenario] = Object.assign({}, M.SCENARIO_DEFAULTS[activeScenario]);
+        saveScenarios();
+        buildActions();
+        renderChart();
+      });
+
+      buildChart();
+      buildActions();
+      renderChart();
+    })();
+  </script>
+</body>
+</html>
